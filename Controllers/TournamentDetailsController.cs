@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tournament.Core.Entities;
 using Tournament.Data.Data;
@@ -25,7 +20,8 @@ namespace Tournament.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TournamentDetails>>> GetTournamentDetails()
         {
-            return Ok(await _context.TournamentDetails.ToListAsync());
+            var tournamentDetails = await _context.TournamentDetails.ToListAsync();
+            return Ok(tournamentDetails);
         }
 
         // GET: api/TournamentDetails/5
