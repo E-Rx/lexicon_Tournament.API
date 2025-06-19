@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Tournament.Core.Entities;
 using Tournament.Core.Repositories;
 using Tournament.Core.Dtos;
-using Microsoft.EntityFrameworkCore;
-
 
 namespace Tournament.API.Controllers
 {
@@ -25,91 +24,128 @@ namespace Tournament.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GameDto>>> GetGame()
         {
-            var games = await _unitOfWork.GameRepository.GetAllAsync();
-            if (games == null || !games.Any())
+            try
             {
-                return NotFound();
+                var games = await _unitOfWork.GameRepository.GetAllAsync();
+
+                if (games == null || !games.Any())
+                {
+                    return NotFound("No games found.");
+                }
+
+                var gamesDtos = _mapper.Map<IEnumerable<GameDto>>(games);
+                return Ok(gamesDtos);
             }
-            var gamesDtos = _mapper.Map<IEnumerable<GameDto>>(games);
-            return Ok(gamesDtos);
+
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while retrieving games.");
+            }
         }
 
         // GET: api/Games/5
         [HttpGet("{id}")]
         public async Task<ActionResult<GameDto>> GetGame(int id)
         {
-            var game = await _unitOfWork.GameRepository.GetAsync(id);
-
-            if (game == null)
+            try
             {
-                return NotFound();
+                var game = await _unitOfWork.GameRepository.GetAsync(id);
+
+                if (game == null)
+                {
+                    return NotFound($"Game with ID {id} not found.");
+                }
+
+                var gameDto = _mapper.Map<GameDto>(game);
+                return Ok(gameDto);
             }
 
-            var gameDto = _mapper.Map<GameDto>(game);
-            return Ok(gameDto);
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while retrieving the game.");
+            }
         }
 
-
         // PUT: api/Games/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutGame(int id, GameDto gameDto)
         {
             if (id != gameDto.Id)
             {
-                return BadRequest();
+                return BadRequest("The ID in the URL does not match the Game ID in the body.");
             }
-
-            var game = _mapper.Map<Game>(gameDto);
-            _unitOfWork.GameRepository.Update(game);
 
             try
             {
+                var game = _mapper.Map<Game>(gameDto);
+                _unitOfWork.GameRepository.Update(game);
+
                 await _unitOfWork.CompleteAsync();
+                return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!await GameExists(id))
                 {
-                    return NotFound();
+                    return NotFound($"Game with ID {id} does not exist.");
                 }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, "A concurrency error occurred while updating the game.");
             }
 
-            return NoContent();
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while updating the game.");
+            }
         }
 
         // POST: api/Games
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<GameDto>> PostGame(GameDto gameDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var game = _mapper.Map<Game>(gameDto);
             _unitOfWork.GameRepository.Add(game);
-            await _unitOfWork.CompleteAsync();
 
+            try
+            {
+                await _unitOfWork.CompleteAsync();
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Failed to save game to the database.");
+            }
 
-            var createdGameDto = _mapper.Map<GameDto>(game);
-            return CreatedAtAction(nameof(GetGame), new { id = game.Id }, createdGameDto);
+            var createdDto = _mapper.Map<GameDto>(game);
+            return CreatedAtAction(nameof(GetGame), new { id = game.Id }, createdDto);
         }
+
 
         // DELETE: api/Games/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteGame(int id)
         {
-            var game = await _unitOfWork.GameRepository.GetAsync(id);
-            if (game == null)
+            try
             {
-                return NotFound();
+                var game = await _unitOfWork.GameRepository.GetAsync(id);
+
+                if (game == null)
+                {
+                    return NotFound($"Game with ID {id} not found.");
+                }
+
+                _unitOfWork.GameRepository.Remove(game);
+                await _unitOfWork.CompleteAsync();
+
+                return NoContent();
             }
-
-            _unitOfWork.GameRepository.Remove(game);
-            await _unitOfWork.CompleteAsync();
-
-            return NoContent();
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while deleting the game.");
+            }
         }
 
         private async Task<bool> GameExists(int id)
