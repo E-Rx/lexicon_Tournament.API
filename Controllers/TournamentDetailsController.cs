@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tournament.Core.Entities;
 using Tournament.Core.Repositories;
-using Tournament.Data.Repositories;
+using Tournament.Core.Dtos;
 
 
 namespace Tournament.API.Controllers
@@ -12,23 +13,30 @@ namespace Tournament.API.Controllers
     public class TournamentDetailsController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public TournamentDetailsController(IUnitOfWork unitOfWork)
+        public TournamentDetailsController(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper=mapper;
         }
 
         // GET: api/TournamentDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TournamentDetails>>> GetTournamentDetails()
+        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetTournamentDetails()
         {
             var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync();
-            return Ok(tournamentDetails);
+            if (tournamentDetails == null || !tournamentDetails.Any())
+            {
+                return NotFound();
+            }
+            var tournamentDetailsDtos = _mapper.Map<IEnumerable<TournamentDetailsDto>>(tournamentDetails);
+            return Ok(tournamentDetailsDtos);
         }
 
         // GET: api/TournamentDetails/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TournamentDetails>> GetTournamentDetails(int id)
+        public async Task<ActionResult<TournamentDetailsDto>> GetTournamentDetails(int id)
         {
             var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAsync(id);
 
@@ -37,25 +45,19 @@ namespace Tournament.API.Controllers
                 return NotFound();
             }
 
-            return Ok(tournamentDetails);
+            var tournamentDetailsDto = _mapper.Map<TournamentDetailsDto>(tournamentDetails);
+            return Ok(tournamentDetailsDto);
         }
 
-        // PUT: api/TournamentDetails/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTournamentDetails(int id, TournamentDetails tournamentDetails)
+        public async Task<IActionResult> PutTournamentDetails(int id, TournamentDetailsDto tournamentDetailsDto)
         {
-            if (id != tournamentDetails.Id)
+            if (id != tournamentDetailsDto.Id)
             {
                 return BadRequest();
             }
 
-            var tournamentExists = await _unitOfWork.TournamentDetailsRepository.AnyAsync(id);
-            if (!tournamentExists)
-            {
-                return NotFound();
-            }
-
+            var tournamentDetails = _mapper.Map<TournamentDetails>(tournamentDetailsDto);
             _unitOfWork.TournamentDetailsRepository.Update(tournamentDetails);
 
             try
@@ -64,7 +66,14 @@ namespace Tournament.API.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                throw;           
+                if (!await TournamentDetailsExists(id)) 
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
 
             return NoContent();
@@ -74,12 +83,14 @@ namespace Tournament.API.Controllers
         // POST: api/TournamentDetails
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<TournamentDetails>> PostTournamentDetails(TournamentDetails tournamentDetails)
+        public async Task<ActionResult<TournamentDetailsDto>> PostTournamentDetails(TournamentDetailsDto tournamentDetailsDto)
         {
+            var tournamentDetails = _mapper.Map<TournamentDetails>(tournamentDetailsDto);
             _unitOfWork.TournamentDetailsRepository.Add(tournamentDetails);
             await _unitOfWork.CompleteAsync();
 
-            return CreatedAtAction(nameof(GetTournamentDetails), new { id = tournamentDetails.Id }, tournamentDetails);
+            var createdTournamentDetailsDto = _mapper.Map<TournamentDetailsDto>(tournamentDetails);
+            return CreatedAtAction(nameof(GetTournamentDetails), new { id = tournamentDetails.Id }, createdTournamentDetailsDto);
         }
 
         // DELETE: api/TournamentDetails/5
