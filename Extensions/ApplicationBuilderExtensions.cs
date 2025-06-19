@@ -24,7 +24,7 @@ public static class ApplicationBuilderExtensions
             {
                 await Tournament.Data.Data.SeedData.InitAsync(db);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
                 throw;
