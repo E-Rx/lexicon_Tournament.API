@@ -21,12 +21,14 @@ namespace Tournament.API.Controllers
         }
 
         // GET: api/TournamentDetails
+        // GET: api/TournamentDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetTournamentDetails()
+        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetTournamentDetails(bool includeGames)
         {
             try
             {
-                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync();
+                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(includeGames);
+
                 if (tournamentDetails == null || !tournamentDetails.Any())
                 {
                     return NotFound("No tournament details found.");
@@ -35,12 +37,12 @@ namespace Tournament.API.Controllers
                 var tournamentDetailsDtos = _mapper.Map<IEnumerable<TournamentDetailsDto>>(tournamentDetails);
                 return Ok(tournamentDetailsDtos);
             }
-
             catch (Exception)
             {
                 return StatusCode(500, "An error occurred while retrieving tournaments.");
             }
         }
+
 
         // GET: api/TournamentDetails/5
         [HttpGet("{id}")]
