@@ -1,9 +1,10 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tournament.Core.Dtos;
 using Tournament.Core.Entities;
 using Tournament.Core.Repositories;
-using Tournament.Core.Dtos;
 
 namespace Tournament.API.Controllers
 {
@@ -126,6 +127,47 @@ namespace Tournament.API.Controllers
             var createdDto = _mapper.Map<TournamentDetailsDto>(tournamentDetails);
             return CreatedAtAction(nameof(GetTournamentDetails), new { id = tournamentDetails.Id }, createdDto);
         }
+
+        // PATCH: api/TournamentDetails/5
+        [HttpPatch("{tournamentDetailsId}")]
+        public async Task<ActionResult> PatchTournamentDetails(int tournamentDetailsId, JsonPatchDocument<TournamentDetailsUpdateDto> patchDocument)
+        {
+            if (patchDocument is null)
+            {
+                return BadRequest("No patch document provided.");
+            }
+
+            var tournament = await _unitOfWork.TournamentDetailsRepository.GetAsync(tournamentDetailsId);
+
+            if (tournament == null)
+            {
+                return NotFound($"Tournament with ID {tournamentDetailsId} not found.");
+            }
+
+            // Map entity to updatable DTO
+            var dtoToPatch = _mapper.Map<TournamentDetailsUpdateDto>(tournament);
+
+            // Apply the patch
+            patchDocument.ApplyTo(dtoToPatch, ModelState);
+
+            TryValidateModel(dtoToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                return UnprocessableEntity(ModelState);
+            }
+
+            // Map the patched DTO back to the entity
+            _mapper.Map(dtoToPatch, tournament);
+            await _unitOfWork.CompleteAsync();
+
+            return NoContent();
+        }
+
+
+
+
+
 
         // DELETE: api/TournamentDetails/5
         [HttpDelete("{id}")]
