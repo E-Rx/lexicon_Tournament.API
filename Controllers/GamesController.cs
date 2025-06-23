@@ -67,6 +67,34 @@ namespace Tournament.API.Controllers
             }
         }
 
+        // GET: api/Games/search?title=Finale
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<GameDto>>> GetGameByTitle([FromQuery] string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return BadRequest("You must provide a title to search.");
+            }
+
+            try
+            {
+                var matchingGames = await _unitOfWork.GameRepository.GetByTitleAsync(title);
+
+                if (!matchingGames.Any())
+                {
+                    return NotFound($"No games found with the title '{title}'.");
+                }
+
+                var matchingGamesDto = _mapper.Map<IEnumerable<GameDto>>(matchingGames);
+                return Ok(matchingGamesDto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while searching for games.");
+            }
+        }
+
+
         // PUT: api/Games/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutGame(int id, GameDto gameDto)
