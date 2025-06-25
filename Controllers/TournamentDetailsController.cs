@@ -21,14 +21,16 @@ namespace Tournament.API.Controllers
             _mapper = mapper;
         }
 
-        // GET: api/TournamentDetails
+
         // GET: api/TournamentDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetTournamentDetails(bool includeGames)
+        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetAllTournamentDetails(
+                [FromQuery] bool includeGames = false,
+                [FromQuery] string? sortBy = null)
         {
             try
             {
-                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(includeGames);
+                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(includeGames, sortBy);
 
                 if (tournamentDetails == null || !tournamentDetails.Any())
                 {
@@ -43,6 +45,28 @@ namespace Tournament.API.Controllers
                 return StatusCode(500, "An error occurred while retrieving tournaments.");
             }
         }
+
+        //[HttpGet]
+        //public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetTournamentDetails(bool includeGames)
+        //{
+        //    try
+        //    {
+        //        var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(includeGames);
+
+        //        if (tournamentDetails == null || !tournamentDetails.Any())
+        //        {
+        //            return NotFound("No tournament details found.");
+        //        }
+
+        //        var tournamentDetailsDtos = _mapper.Map<IEnumerable<TournamentDetailsDto>>(tournamentDetails);
+        //        return Ok(tournamentDetailsDtos);
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return StatusCode(500, "An error occurred while retrieving tournaments.");
+        //    }
+        //}
+
 
 
         // GET: api/TournamentDetails/5
