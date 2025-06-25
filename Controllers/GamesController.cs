@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Tournament.Core.Dtos;
 using Tournament.Core.Entities;
 using Tournament.Core.Repositories;
+using Tournament.Core.QueryParameters;
 
 namespace Tournament.API.Controllers
 {
@@ -23,7 +24,7 @@ namespace Tournament.API.Controllers
 
         // GET: api/Games
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<GameDto>>> GetGame([FromQuery] string? sortBy)
+        public async Task<ActionResult<IEnumerable<GameDto>>> GetGame([FromQuery] GameQuery gameQuery)
         {
             try
             {
@@ -34,16 +35,6 @@ namespace Tournament.API.Controllers
                     return NotFound("No games found.");
                 }
 
-                // Sort games if sortBy parameter is provided
-                if (!string.IsNullOrWhiteSpace(sortBy))
-                {
-                    games = sortBy.ToLower() switch
-                    {
-                        "title" => games.OrderBy(g => g.Title),
-                        "time" => games.OrderBy(g => g.Time),
-                        _ => games
-                    };
-                }
 
                 var gamesDtos = _mapper.Map<IEnumerable<GameDto>>(games);
                 return Ok(gamesDtos);

@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Tournament.Core.Dtos;
 using Tournament.Core.Entities;
 using Tournament.Core.Repositories;
+using Tournament.Core.QueryParameters;
+
 
 namespace Tournament.API.Controllers
 {
@@ -24,13 +26,11 @@ namespace Tournament.API.Controllers
 
         // GET: api/TournamentDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetAllTournamentDetails(
-                [FromQuery] bool includeGames = false,
-                [FromQuery] string? sortBy = null)
+        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetAllTournamentDetails([FromQuery] TournamentDetailsQuery query)
         {
             try
             {
-                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(includeGames, sortBy);
+                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(query.IncludeGames, query.SortBy);
 
                 if (tournamentDetails == null || !tournamentDetails.Any())
                 {
