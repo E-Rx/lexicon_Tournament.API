@@ -30,7 +30,11 @@ namespace Tournament.API.Controllers
         {
             try
             {
-                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(query.IncludeGames, query.SortBy);
+                var tournamentDetails = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(
+                    query.IncludeGames, 
+                    query.SortBy,
+                    query.PageNumber,
+                    query.PageSize);
 
                 if (tournamentDetails == null || !tournamentDetails.Any())
                 {
